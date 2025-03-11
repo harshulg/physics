@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Lorentz Attractor</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background-color: #000;
+            margin: 20px 0;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 3px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .color-controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .info {
+            background-color: #e7f3fe;
+            border-left: 4px solid #2196F3;
+            padding: 10px 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Lorentz Attractor</h1>
+        
+        <canvas id="canvas" width="600" height="400"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="sigma">Sigma (σ)</label>
+                <input type="range" id="sigma" min="1" max="30" step="0.1" value="10">
+                <div class="value-display" id="sigma-value">10</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="rho">Rho (ρ)</label>
+                <input type="range" id="rho" min="1" max="50" step="0.1" value="28">
+                <div class="value-display" id="rho-value">28</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="beta">Beta (β)</label>
+                <input type="range" id="beta" min="0.1" max="10" step="0.01" value="2.67">
+                <div class="value-display" id="beta-value">2.67</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="dt">Time Step (dt)</label>
+                <input type="range" id="dt" min="0.001" max="0.02" step="0.001" value="0.005">
+                <div class="value-display" id="dt-value">0.005</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="rotation-speed">Rotation Speed</label>
+                <input type="range" id="rotation-speed" min="0" max="2" step="0.01" value="0.5">
+                <div class="value-display" id="rotation-speed-value">0.5</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="zoom">Zoom</label>
+                <input type="range" id="zoom" min="1" max="20" step="0.1" value="6">
+                <div class="value-display" id="zoom-value">6</div>
+            </div>
+        </div>
+        
+        <div class="color-controls">
+            <div class="control-group">
+                <label for="trail-length">Trail Length</label>
+                <input type="range" id="trail-length" min="100" max="10000" step="100" value="2000">
+                <div class="value-display" id="trail-length-value">2000</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="color-mode">Color Mode</label>
+                <select id="color-mode">
+                    <option value="rainbow">Rainbow</option>
+                    <option value="position">Position Based</option>
+                    <option value="speed">Speed Based</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="reset">Reset Simulation</button>
+            <button id="random">Random Parameters</button>
+            <button id="pause">Pause</button>
+        </div>
+        
+        <div class="info">
+            <p><strong>About the Lorentz Attractor:</strong> The Lorentz attractor is a set of chaotic solutions to the Lorentz system, which describes the behavior of a two-dimensional fluid layer heated from below. It demonstrates how small changes in initial conditions can result in vastly different outcomes, a phenomenon known as the butterfly effect.</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Get sliders and value displays
+        const sigmaSlider = document.getElementById('sigma');
+        const rhoSlider = document.getElementById('rho');
+        const betaSlider = document.getElementById('beta');
+        const dtSlider = document.getElementById('dt');
+        const rotationSpeedSlider = document.getElementById('rotation-speed');
+        const zoomSlider = document.getElementById('zoom');
+        const trailLengthSlider = document.getElementById('trail-length');
+        const colorModeSelect = document.getElementById('color-mode');
+        
+        const sigmaValue = document.getElementById('sigma-value');
+        const rhoValue = document.getElementById('rho-value');
+        const betaValue = document.getElementById('beta-value');
+        const dtValue = document.getElementById('dt-value');
+        const rotationSpeedValue = document.getElementById('rotation-speed-value');
+        const zoomValue = document.getElementById('zoom-value');
+        const trailLengthValue = document.getElementById('trail-length-value');
+        
+        const resetButton = document.getElementById('reset');
+        const randomButton = document.getElementById('random');
+        const pauseButton = document.getElementById('pause');
+        
+        // Lorentz parameters
+        let sigma = parseFloat(sigmaSlider.value);
+        let rho = parseFloat(rhoSlider.value);
+        let beta = parseFloat(betaSlider.value);
+        let dt = parseFloat(dtSlider.value);
+        let rotationSpeed = parseFloat(rotationSpeedSlider.value);
+        let zoom = parseFloat(zoomSlider.value);
+        let trailLength = parseInt(trailLengthSlider.value);
+        let colorMode = colorModeSelect.value;
+        
+        // Initial conditions
+        let x = 0.1;
+        let y = 0;
+        let z = 0;
+        
+        // For rotation
+        let angle = 0;
+        
+        // Array to store points for the trail
+        let points = [];
+        
+        // Animation state
+        let isRunning = true;
+        let animationId;
+        
+        // Update parameter values when sliders change
+        sigmaSlider.addEventListener('input', () => {
+            sigma = parseFloat(sigmaSlider.value);
+            sigmaValue.textContent = sigma;
+        });
+        
+        rhoSlider.addEventListener('input', () => {
+            rho = parseFloat(rhoSlider.value);
+            rhoValue.textContent = rho;
+        });
+        
+        betaSlider.addEventListener('input', () => {
+            beta = parseFloat(betaSlider.value);
+            betaValue.textContent = beta;
+        });
+        
+        dtSlider.addEventListener('input', () => {
+            dt = parseFloat(dtSlider.value);
+            dtValue.textContent = dt;
+        });
+        
+        rotationSpeedSlider.addEventListener('input', () => {
+            rotationSpeed = parseFloat(rotationSpeedSlider.value);
+            rotationSpeedValue.textContent = rotationSpeed;
+        });
+        
+        zoomSlider.addEventListener('input', () => {
+            zoom = parseFloat(zoomSlider.value);
+            zoomValue.textContent = zoom;
+        });
+        
+        trailLengthSlider.addEventListener('input', () => {
+            trailLength = parseInt(trailLengthSlider.value);
+            trailLengthValue.textContent = trailLength;
+            // Trim points array if it's longer than the new trail length
+            if (points.length > trailLength) {
+                points = points.slice(points.length - trailLength);
+            }
+        });
+        
+        colorModeSelect.addEventListener('change', () => {
+            colorMode = colorModeSelect.value;
+        });
+        
+        // Reset button
+        resetButton.addEventListener('click', () => {
+            x = 0.1;
+            y = 0;
+            z = 0;
+            points = [];
+            angle = 0;
+        });
+        
+        // Random parameters button
+        randomButton.addEventListener('click', () => {
+            sigma = Math.random() * 29 + 1; // 1 to 30
+            rho = Math.random() * 49 + 1; // 1 to 50
+            beta = Math.random() * 9.9 + 0.1; // 0.1 to 10
+            
+            sigmaSlider.value = sigma;
+            rhoSlider.value = rho;
+            betaSlider.value = beta;
+            
+            sigmaValue.textContent = sigma.toFixed(2);
+            rhoValue.textContent = rho.toFixed(2);
+            betaValue.textContent = beta.toFixed(2);
+            
+            x = Math.random() * 2 - 1; // Random starting point
+            y = Math.random() * 2 - 1;
+            z = Math.random() * 2 - 1;
+            points = [];
+        });
+        
+        // Pause/Play button
+        pauseButton.addEventListener('click', () => {
+            isRunning = !isRunning;
+            pauseButton.textContent = isRunning ? 'Pause' : 'Play';
+            
+            if (isRunning) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+            }
+        });
+        
+        // Calculate the next point in the Lorentz system
+        function calculateNext() {
+            const dx = sigma * (y - x) * dt;
+            const dy = (x * (rho - z) - y) * dt;
+            const dz = (x * y - beta * z) * dt;
+            
+            x += dx;
+            y += dy;
+            z += dz;
+            
+            points.push({ x, y, z, dx, dy, dz });
+            
+            // Limit the number of points
+            if (points.length > trailLength) {
+                points.shift();
+            }
+        }
+        
+        // Get color based on the selected color mode
+        function getColor(point, index) {
+            const progress = index / points.length;
+            
+            switch (colorMode) {
+                case 'rainbow':
+                    return `hsl(${progress * 360}, 100%, 50%)`;
+                case 'position':
+                    const hue = ((point.x + 30) / 60 * 120 + (point.z / 50 * 240)) % 360;
+                    return `hsl(${hue}, 100%, 50%)`;
+                case 'speed':
+                    const speed = Math.sqrt(point.dx * point.dx + point.dy * point.dy + point.dz * point.dz);
+                    const speedHue = (speed * 2000) % 360;
+                    return `hsl(${speedHue}, 100%, 50%)`;
+                default:
+                    return `hsl(${progress * 360}, 100%, 50%)`;
+            }
+        }
+        
+        // Draw the attractor
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Center point
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            // Draw points
+            if (points.length > 1) {
+                for (let i = 1; i < points.length; i++) {
+                    const p1 = points[i - 1];
+                    const p2 = points[i];
+                    
+                    // Apply rotation to 3D points
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+                    
+                    // Rotate around Y axis
+                    const x1 = p1.x * cos - p1.z * sin;
+                    const z1 = p1.x * sin + p1.z * cos;
+                    
+                    const x2 = p2.x * cos - p2.z * sin;
+                    const z2 = p2.x * sin + p2.z * cos;
+                    
+                    // Project to 2D
+                    const screenX1 = centerX + x1 * zoom;
+                    const screenY1 = centerY - p1.y * zoom; // Invert Y for canvas coordinates
+                    
+                    const screenX2 = centerX + x2 * zoom;
+                    const screenY2 = centerY - p2.y * zoom;
+                    
+                    // Set line width and color based on position in the array
+                    const alpha = Math.min(1, i / points.length * 2);
+                    const lineWidth = Math.max(1, Math.min(3, i / points.length * 3));
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(screenX1, screenY1);
+                    ctx.lineTo(screenX2, screenY2);
+                    ctx.strokeStyle = getColor(p2, i);
+                    ctx.lineWidth = lineWidth;
+                    ctx.stroke();
+                }
+            }
+            
+            // Update rotation
+            angle += rotationSpeed * 0.01;
+        }
+        
+        // Animation loop
+        function animate() {
+            if (isRunning) {
+                // Calculate next points (multiple steps per frame for smoother animation)
+                const stepsPerFrame = 5;
+                for (let i = 0; i < stepsPerFrame; i++) {
+                    calculateNext();
+                }
+                
+                draw();
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        // Set initial values on displays
+        sigmaValue.textContent = sigma;
+        rhoValue.textContent = rho;
+        betaValue.textContent = beta;
+        dtValue.textContent = dt;
+        rotationSpeedValue.textContent = rotationSpeed;
+        zoomValue.textContent = zoom;
+        trailLengthValue.textContent = trailLength;
+        
+        // Start animation
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            // No need to resize the canvas as we set fixed dimensions
+        });
+    </script>
+</body>
+</html>
