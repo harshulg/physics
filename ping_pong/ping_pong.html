@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ping Pong Game</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    #game-board {
+      background-color: #000;
+      border: 2px solid #444;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #score {
+      font-size: 24px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    #instructions {
+      margin-top: 15px;
+      text-align: center;
+    }
+    .score-display {
+      position: absolute;
+      top: 20px;
+      font-size: 48px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    #player1-score {
+      left: 140px;
+    }
+    #player2-score {
+      right: 140px;
+    }
+    .player-label {
+      position: absolute;
+      top: 80px;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    #player1-label {
+      left: 140px;
+    }
+    #player2-label {
+      right: 140px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="score">0 : 0</div>
+    <svg id="game-board" width="600" height="400">
+      <rect id="paddle1" x="10" y="160" width="10" height="80" fill="white" />
+      <rect id="paddle2" x="580" y="160" width="10" height="80" fill="white" />
+      <circle id="ball" cx="300" cy="200" r="8" fill="white" />
+      <line x1="300" y1="0" x2="300" y2="400" stroke="white" stroke-width="2" stroke-dasharray="10" />
+      
+      <!-- Score displays inside the game board -->
+      <text id="player1-score" x="140" y="60" font-size="48" font-weight="bold" fill="white" text-anchor="middle">0</text>
+      <text id="player2-score" x="460" y="60" font-size="48" font-weight="bold" fill="white" text-anchor="middle">0</text>
+      
+      <text id="player1-label" x="140" y="85" font-size="16" fill="white" text-anchor="middle">PLAYER 1</text>
+      <text id="player2-label" x="460" y="85" font-size="16" fill="white" text-anchor="middle">PLAYER 2</text>
+    </svg>
+    <button id="start-btn">Start Game</button>
+    <div id="instructions">
+      <p>Use W/S keys to move the left paddle up/down</p>
+      <p>Use Up/Down arrow keys to move the right paddle up/down</p>
+    </div>
+  </div>
+
+  <script>
+    // Game elements
+    const ball = document.getElementById('ball');
+    const paddle1 = document.getElementById('paddle1');
+    const paddle2 = document.getElementById('paddle2');
+    const scoreDisplay = document.getElementById('score');
+    const player1ScoreDisplay = document.getElementById('player1-score');
+    const player2ScoreDisplay = document.getElementById('player2-score');
+    const startButton = document.getElementById('start-btn');
+    
+    // Game variables
+    let ballX = 300;
+    let ballY = 200;
+    let ballSpeedX = 4;
+    let ballSpeedY = 4;
+    let paddle1Y = 160;
+    let paddle2Y = 160;
+    let score1 = 0;
+    let score2 = 0;
+    let gameInterval;
+    let isGameRunning = false;
+    
+    // Key states
+    const keys = {
+      w: false,
+      s: false,
+      ArrowUp: false,
+      ArrowDown: false
+    };
+    
+    // Event listeners
+    document.addEventListener('keydown', (e) => {
+      if (keys.hasOwnProperty(e.key)) {
+        keys[e.key] = true;
+      }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+      if (keys.hasOwnProperty(e.key)) {
+        keys[e.key] = false;
+      }
+    });
+    
+    startButton.addEventListener('click', toggleGame);
+    
+    function toggleGame() {
+      if (isGameRunning) {
+        pauseGame();
+        startButton.textContent = 'Resume Game';
+      } else {
+        startGame();
+        startButton.textContent = 'Pause Game';
+      }
+      isGameRunning = !isGameRunning;
+    }
+    
+    function startGame() {
+      if (gameInterval) {
+        clearInterval(gameInterval);
+      }
+      
+      // Reset ball position on start
+      if (score1 === 0 && score2 === 0) {
+        resetBall();
+      }
+      
+      gameInterval = setInterval(updateGame, 16); // ~60fps
+    }
+    
+    function pauseGame() {
+      clearInterval(gameInterval);
+    }
+    
+    function resetBall() {
+      ballX = 300;
+      ballY = 200;
+      ballSpeedX = Math.random() > 0.5 ? 4 : -4;
+      ballSpeedY = Math.random() > 0.5 ? 4 : -4;
+    }
+    
+    function updateGame() {
+      // Move paddles
+      const paddleSpeed = 5;
+      
+      if (keys.w && paddle1Y > 0) {
+        paddle1Y -= paddleSpeed;
+      }
+      if (keys.s && paddle1Y < 320) {
+        paddle1Y += paddleSpeed;
+      }
+      if (keys.ArrowUp && paddle2Y > 0) {
+        paddle2Y -= paddleSpeed;
+      }
+      if (keys.ArrowDown && paddle2Y < 320) {
+        paddle2Y += paddleSpeed;
+      }
+      
+      // Update paddle positions
+      paddle1.setAttribute('y', paddle1Y);
+      paddle2.setAttribute('y', paddle2Y);
+      
+      // Move ball
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+      
+      // Ball collisions with top and bottom
+      if (ballY <= 8 || ballY >= 392) {
+        ballSpeedY = -ballSpeedY;
+      }
+      
+      // Ball collision with paddles
+      if (ballX <= 28 && ballY > paddle1Y && ballY < paddle1Y + 80) {
+        ballSpeedX = -ballSpeedX;
+        // Add some angle based on where the ball hits the paddle
+        const paddleCenter = paddle1Y + 40;
+        ballSpeedY += (ballY - paddleCenter) * 0.1;
+      }
+      
+      if (ballX >= 572 && ballY > paddle2Y && ballY < paddle2Y + 80) {
+        ballSpeedX = -ballSpeedX;
+        // Add some angle based on where the ball hits the paddle
+        const paddleCenter = paddle2Y + 40;
+        ballSpeedY += (ballY - paddleCenter) * 0.1;
+      }
+      
+      // Ball out of bounds
+      if (ballX < 0) {
+        // Player 2 scores
+        score2++;
+        updateScores();
+        resetBall();
+      } else if (ballX > 600) {
+        // Player 1 scores
+        score1++;
+        updateScores();
+        resetBall();
+      }
+      
+      // Update ball position
+      ball.setAttribute('cx', ballX);
+      ball.setAttribute('cy', ballY);
+    }
+    
+    function updateScores() {
+      // Update both score displays
+      scoreDisplay.textContent = `${score1} : ${score2}`;
+      player1ScoreDisplay.textContent = score1;
+      player2ScoreDisplay.textContent = score2;
+    }
+  </script>
+</body>
+</html>
